@@ -64,20 +64,12 @@ class ComponentModelProcessorTest {
     assertMarkupEquals("<i>simple</i>", html);
   }
 
-  @Disabled("additional attributes not yet fully supported")
   @Test
-  void simple_additionalStaticAttribute_rendersAttribute() {
-    String html = render("<pl:simple key='value' />");
+  void withPassAdditionalAttributes_additionalStaticAttribute_rendersAttribute() {
+    String html = render("<pl:with-pass-additional-attributes key='value' />");
 
-    assertMarkupEquals("<i key='value'>simple</i>", html);
-  }
-
-  @Disabled("additional attributes not yet fully supported")
-  @Test
-  void simple_additionalDynamicAttribute_rendersAttribute() {
-    String html = render("<pl:simple th:attr='key=value' />");
-
-    assertMarkupEquals("<i key='value'>simple</i>", html);
+    assertMarkupEquals("<i key=\"value\">has-additional-attributes</i>" +
+        "<b key=\"value\">also-has-additional-attributes</b>", html);
   }
 
   @Test
