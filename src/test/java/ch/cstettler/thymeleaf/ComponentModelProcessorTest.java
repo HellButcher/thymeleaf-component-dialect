@@ -292,6 +292,13 @@ class ComponentModelProcessorTest {
   }
 
   @Test
+  void withNestedFragment_resolvesInnerFragment() {
+    String html = render("<pl:with-nested-fragment pl:variable='bar'></pl:with-nested-fragment>");
+
+    assertMarkupEquals("<i>bar</i><span><b>bar</b></span>", html);
+  }
+
+  @Test
   void subTree_rootStartTemplateEvent_returnsCompleteTree() {
     ITemplateEvent startTemplateEvent = openElementTag();
     List<ITemplateEvent> templateEvents = List.of(
@@ -445,7 +452,8 @@ class ComponentModelProcessorTest {
         .addComponent("with-default-and-named-slots", "components/with-default-and-named-slots.html")
         .addComponent("with-default-slot", "components/with-default-slot.html")
         .addComponent("with-named-slots", "components/with-named-slots.html")
-        .addComponent("with-slot-with-fallback", "components/with-slot-with-fallback.html");
+        .addComponent("with-slot-with-fallback", "components/with-slot-with-fallback.html")
+        .addComponent("with-nested-fragment", "components/with-nested-fragment.html");
 
     TemplateEngine templateEngine = new TemplateEngine();
     templateEngine.setTemplateResolvers(setOf(new TemplateResolverChain(new ClassLoaderTemplateResolver(), new StringTemplateResolver())));

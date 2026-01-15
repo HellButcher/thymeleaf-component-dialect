@@ -85,7 +85,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     Map<String, Object> componentAttributes = resolveComponentAttributes(componentElementTag, context, expressionParser);
     componentAttributes.forEach(structureHandler::setLocalVariable);
 
-    IModel fragmentModel = loadFragmentModel(context);
+    TemplateModel fragmentModel = loadFragmentModel(context);
     IProcessableElementTag fragmentRootElementTag = firstOpenElementTagWithAttribute(fragmentModel, TH_FRAGMENT);
     if (fragmentRootElementTag != null) {
       Map<String, Object> defaultAttributes = resolveComponentAttributes (fragmentRootElementTag, context, expressionParser);
@@ -110,6 +110,13 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
         }
       }
     }
+
+    /*
+     * APPLY THE FRAGMENT'S TEMPLATE RESOLUTION so that all code inside the fragment is executed with its own
+     * template resolution info (working as if it were a local variable)
+     */
+    structureHandler.setTemplateData(fragmentModel.getTemplateData());
+
     Map<String, List<ITemplateEvent>> slotContents = extractSlotContents(model);
     Map<String, ITemplateEvent> slots = extractSlots(fragmentModel);
     IModel mergedModel = prepareModel(context, fragmentModel, fragmentRootElementTag, additionalAttributes, slots, slotContents);
@@ -122,7 +129,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     return componentElementTag.getElementCompleteName().startsWith(dialectPrefix + ":");
   }
 
-  private IModel loadFragmentModel(ITemplateContext context) {
+  private TemplateModel loadFragmentModel(ITemplateContext context) {
     return parseFragmentTemplateModel(context, templatePath);
   }
 
@@ -359,7 +366,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     }
   }
 
-  private static IModel parseFragmentTemplateModel(ITemplateContext context, String templateName) {
+  private static TemplateModel parseFragmentTemplateModel(ITemplateContext context, String templateName) {
     TemplateManager templateManager = context.getConfiguration().getTemplateManager();
     TemplateModel templateModel = templateManager.parseStandalone(context, templateName, emptySet(), HTML, true, true);
 
