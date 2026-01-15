@@ -16,8 +16,7 @@
 package ch.cstettler.thymeleaf;
 
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.*;
 import static org.thymeleaf.model.AttributeValueQuotes.DOUBLE;
 import static org.thymeleaf.standard.processor.StandardReplaceTagProcessor.PRECEDENCE;
 import static org.thymeleaf.templatemode.TemplateMode.HTML;
@@ -52,19 +51,29 @@ import org.thymeleaf.util.StringUtils;
 
 class ComponentModelProcessor extends AbstractElementModelProcessor {
 
-  private static final String DEFAULT_SLOT_NAME = ComponentModelProcessor.class.getName() + ".default";
   private static final String TH_FRAGMENT = "th:fragment";
 
   private final String dialectPrefix;
   private final String elementName;
   private final String templatePath;
+  private final String templateFragment;
 
   public ComponentModelProcessor(String dialectPrefix, String elementName, String templatePath) {
     super(HTML, dialectPrefix, elementName, true, null, false, PRECEDENCE);
 
     this.dialectPrefix = dialectPrefix;
     this.elementName = elementName;
-    this.templatePath = templatePath != null ? templatePath : dialectPrefix + "/" + elementName + "/" + elementName;
+    if (templatePath == null) {
+      this.templatePath = dialectPrefix + "/" + elementName + "/" + elementName;
+      this.templateFragment = elementName;
+    } else if (templatePath.contains("::")) {
+      int pos = templatePath.indexOf("::");
+      this.templatePath = templatePath.substring(0, pos).trim();;
+      this.templateFragment = templatePath.substring(pos + 2).trim();;
+    } else {
+      this.templatePath = templatePath;
+      this.templateFragment = elementName;
+    }
   }
 
   @Override
@@ -130,7 +139,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
   }
 
   private TemplateModel loadFragmentModel(ITemplateContext context) {
-    return parseFragmentTemplateModel(context, templatePath);
+    return parseFragmentTemplateModel(context, templatePath, templateFragment);
   }
 
   private Map<String, List<ITemplateEvent>> extractSlotContents(IModel model) {
@@ -366,11 +375,16 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     }
   }
 
-  private static TemplateModel parseFragmentTemplateModel(ITemplateContext context, String templateName) {
+  private static TemplateModel parseFragmentTemplateModel(ITemplateContext context, String templateName, String fragmentName) {
     TemplateManager templateManager = context.getConfiguration().getTemplateManager();
-    TemplateModel templateModel = templateManager.parseStandalone(context, templateName, emptySet(), HTML, true, true);
-
-    return templateModel;
+    TemplateModel model =  templateManager.parseStandalone(context, templateName, fragmentName == null ? emptySet() : singleton(fragmentName), HTML, true, true);
+    if (model == null) {
+      throw new TemplateProcessingException("Could not load component template '" + templateName + "'");
+    } else if (fragmentName != null && model.size() == 2) {
+      // 2 = template start and template end events only -> fragment not found
+      throw new TemplateProcessingException("Could not load component template '" + templateName + "::" + fragmentName + "'");
+    }
+    return model;
   }
 
   public static List<ITemplateEvent> subTreeBelow(IModel model, IProcessableElementTag elementTag) {
