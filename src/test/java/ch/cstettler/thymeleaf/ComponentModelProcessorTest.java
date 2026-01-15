@@ -15,34 +15,24 @@
  */
 package ch.cstettler.thymeleaf;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.IEngineConfiguration;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.TemplateSpec;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.model.ICloseElementTag;
-import org.thymeleaf.model.IModel;
-import org.thymeleaf.model.IOpenElementTag;
-import org.thymeleaf.model.IStandaloneElementTag;
-import org.thymeleaf.model.ITemplateEnd;
-import org.thymeleaf.model.ITemplateEvent;
-import org.thymeleaf.model.ITemplateStart;
-import org.thymeleaf.model.IText;
+import org.thymeleaf.exceptions.TemplateInputException;
+import org.thymeleaf.model.*;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
 import org.thymeleaf.templateresolver.TemplateResolution;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -113,10 +103,10 @@ class ComponentModelProcessorTest {
   }
 
   @Test
-  void withParameter_parameterNotDefined_renders() {
-    String html = render("<pl:with-parameter />");
-
-    assertMarkupEquals("<i></i>", html);
+  void withParameter_requiredParameterNotDefined_fails() {
+    assertThrows(TemplateInputException.class, () -> {
+      render("<pl:with-parameter />");
+    });
   }
 
   @Test

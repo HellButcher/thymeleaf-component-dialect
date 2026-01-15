@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.thymeleaf.IEngineConfiguration;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.engine.TemplateManager;
 import org.thymeleaf.engine.TemplateModel;
@@ -45,12 +46,14 @@ import org.thymeleaf.model.IStandaloneElementTag;
 import org.thymeleaf.model.ITemplateEvent;
 import org.thymeleaf.processor.element.AbstractElementModelProcessor;
 import org.thymeleaf.processor.element.IElementModelStructureHandler;
-import org.thymeleaf.standard.expression.IStandardExpressionParser;
-import org.thymeleaf.standard.expression.StandardExpressions;
+import org.thymeleaf.standard.expression.*;
+import org.thymeleaf.util.EscapedAttributeUtils;
+import org.thymeleaf.util.StringUtils;
 
 class ComponentModelProcessor extends AbstractElementModelProcessor {
 
   private static final String DEFAULT_SLOT_NAME = ComponentModelProcessor.class.getName() + ".default";
+  private static final String TH_FRAGMENT = "th:fragment";
 
   private final String dialectPrefix;
   private final String elementName;
@@ -76,18 +79,36 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
       // avoid handling web components named "pl-xyz" (thymeleaf treats "pl-" as prefix the same way as "pl:")
       return;
     }
-
-    IStandardExpressionParser expressionParser = StandardExpressions.getExpressionParser(context.getConfiguration());
+    IEngineConfiguration configuration = context.getConfiguration();
+    IStandardExpressionParser expressionParser = StandardExpressions.getExpressionParser(configuration);
     Map<String, Object> additionalAttributes = resolveAdditionalAttributes(componentElementTag, context, expressionParser);
     Map<String, Object> componentAttributes = resolveComponentAttributes(componentElementTag, context, expressionParser);
     componentAttributes.forEach(structureHandler::setLocalVariable);
 
     IModel fragmentModel = loadFragmentModel(context);
-    IProcessableElementTag fragmentRootElementTag = firstOpenElementTagWithAttribute(fragmentModel, "th:fragment");
+    IProcessableElementTag fragmentRootElementTag = firstOpenElementTagWithAttribute(fragmentModel, TH_FRAGMENT);
     if (fragmentRootElementTag != null) {
       Map<String, Object> defaultAttributes = resolveComponentAttributes (fragmentRootElementTag, context, expressionParser);
       componentAttributes.keySet ().forEach (defaultAttributes::remove);
       defaultAttributes.forEach (structureHandler::setLocalVariable);
+
+      // Validate fragment signature:
+      // all attributes must be present in componentAttributes
+      // (this is analogous to how th:replace/th:insert works; see AbstractStandardFragmentInsertionTagProcessor)
+      final String fragmentSignatureSpec = EscapedAttributeUtils.unescapeAttribute(fragmentModel.getTemplateMode(), fragmentRootElementTag.getAttributeValue(TH_FRAGMENT));
+      if (!StringUtils.isEmptyOrWhitespace(fragmentSignatureSpec)) {
+        final FragmentSignature fragmentSignature =
+                FragmentSignatureUtils.parseFragmentSignature(configuration, fragmentSignatureSpec);
+        if (fragmentSignature != null && fragmentSignature.hasParameters()) {
+          for (String parameterName : fragmentSignature.getParameterNames()) {
+            if (!componentAttributes.containsKey(parameterName)) {
+              throw new TemplateProcessingException(
+                      "Component '" + dialectPrefix + ":" + elementName + "' is missing required attribute '" +
+                              parameterName + "' declared in fragment signature '" + fragmentSignatureSpec + "'");
+            }
+          }
+        }
+      }
     }
     Map<String, List<ITemplateEvent>> slotContents = extractSlotContents(model);
     Map<String, ITemplateEvent> slots = extractSlots(fragmentModel);
