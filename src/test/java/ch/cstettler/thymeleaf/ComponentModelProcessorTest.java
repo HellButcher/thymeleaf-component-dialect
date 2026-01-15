@@ -305,6 +305,19 @@ class ComponentModelProcessorTest {
     assertMarkupEquals("<b>bar</b>", html);
   }
 
+  @Test
+  void withSlotConditional_replacesTheCorrectSlot_True() {
+    String html = render("<pl:with-slot-conditional pl:condition='${true}'></pl:with-slot-conditional>");
+
+    assertMarkupEquals("<div><i>True</i><p>fallback 1</p></div>", html);
+  }
+
+  @Test
+  void withSlotConditional_replacesTheCorrectSlot_False() {
+    String html = render("<pl:with-slot-conditional pl:condition='${false}'></pl:with-slot-conditional>");
+
+    assertMarkupEquals("<div><i>False</i><p>fallback 2</p></div>", html);
+  }
 
   @Test
   void subTree_rootStartTemplateEvent_returnsCompleteTree() {
@@ -462,7 +475,8 @@ class ComponentModelProcessorTest {
         .addComponent("with-named-slots", "components/with-named-slots.html")
         .addComponent("with-slot-with-fallback", "components/with-slot-with-fallback.html")
         .addComponent("with-nested-fragment", "components/with-nested-fragment.html")
-        .addComponent("with-nested-fragment-other", "components/with-nested-fragment.html :: other-fragment");
+        .addComponent("with-nested-fragment-other", "components/with-nested-fragment.html :: other-fragment")
+        .addComponent("with-slot-conditional", "components/with-slot-conditional.html");
 
     TemplateEngine templateEngine = new TemplateEngine();
     templateEngine.setTemplateResolvers(setOf(new TemplateResolverChain(new ClassLoaderTemplateResolver(), new StringTemplateResolver())));

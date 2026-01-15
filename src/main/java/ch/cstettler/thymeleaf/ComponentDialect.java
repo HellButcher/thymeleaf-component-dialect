@@ -34,6 +34,7 @@ public class ComponentDialect extends AbstractProcessorDialect {
     super("Thymeleaf UI Component Dialect", prefix, 0);
 
     this.processors = new HashSet<>();
+    this.processors.add(new ReplaceSlotTagProcessor(prefix, "slot"));
     this.processors.add(new RemoveSlotAttributeProcessor(prefix, "slot"));
   }
 

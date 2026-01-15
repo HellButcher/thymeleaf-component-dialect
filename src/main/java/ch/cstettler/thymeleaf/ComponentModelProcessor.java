@@ -127,8 +127,21 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     structureHandler.setTemplateData(fragmentModel.getTemplateData());
 
     Map<String, List<ITemplateEvent>> slotContents = extractSlotContents(model);
-    Map<String, ITemplateEvent> slots = extractSlots(fragmentModel);
-    IModel mergedModel = prepareModel(context, fragmentModel, fragmentRootElementTag, additionalAttributes, slots, slotContents);
+    Map<String, IModel> slotModels = new HashMap<>(slotContents.size());
+    slotContents.forEach((slotName, slotContentEvents) -> {
+      IModel slotModel = context.getModelFactory().createModel();
+      slotContentEvents.forEach(slotModel::add);
+      slotModels.put(slotName, slotModel);
+    });
+    final ReplaceSlotTagProcessor.SlotData slotData;
+    if (context.getVariable(ReplaceSlotTagProcessor.SLOTS_DATA) instanceof ReplaceSlotTagProcessor.SlotData parent) {
+      slotData = new ReplaceSlotTagProcessor.SlotData(slotModels, context.getTemplateData(), parent);
+    } else {
+      slotData = new ReplaceSlotTagProcessor.SlotData(slotModels, context.getTemplateData());
+    }
+    structureHandler.setLocalVariable(ReplaceSlotTagProcessor.SLOTS_DATA, slotData);
+
+    IModel mergedModel = prepareModel(context, fragmentModel, fragmentRootElementTag, additionalAttributes);
 
     model.reset();
     model.addModel(mergedModel);
@@ -161,21 +174,10 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     });
 
     List<ITemplateEvent> defaultSlotContent = subTreeBelow(model, firstOpenOrStandaloneElementTag(model));
-    slots.values().forEach(defaultSlotContent::removeAll);
-    slots.put(DEFAULT_SLOT_NAME, defaultSlotContent);
-
-    return slots;
-  }
-
-  private Map<String, ITemplateEvent> extractSlots(IModel fragmentModel) {
-    Map<String, ITemplateEvent> slots = new HashMap<>();
-
-    templateEventsIn(fragmentModel).forEach(templateEvent -> {
-      if (isSlot(templateEvent)) {
-        slots.put(slotNameOf((IProcessableElementTag) templateEvent), templateEvent);
-      }
-    });
-
+    if (!defaultSlotContent.isEmpty()) {
+      slots.values().forEach(defaultSlotContent::removeAll);
+      slots.put(ReplaceSlotTagProcessor.DEFAULT_SLOT_NAME, defaultSlotContent);
+    }
     return slots;
   }
 
@@ -183,9 +185,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     ITemplateContext context,
     IModel fragmentModel,
     IProcessableElementTag fragmentRootElementTag,
-    Map<String, Object> additionalAttributes,
-    Map<String, ITemplateEvent> slots,
-    Map<String, List<ITemplateEvent>> slotContents
+    Map<String, Object> additionalAttributes
   ) {
     IModelFactory modelFactory = context.getModelFactory();
     IModel newModel = modelFactory.createModel();
@@ -195,8 +195,6 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     if (!hasPassedDownAttributes) {
       newModel.add(blockOpenElement(modelFactory, additionalAttributes));
     }
-
-    fillSlots(fragmentModel, fragmentElementTags, slots, slotContents);
 
     fragmentElementTags.forEach(newModel::add);
 
@@ -253,37 +251,6 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     throw new IllegalArgumentException ("Unsupported tag class");
   }
 
-  private void fillSlots(
-    IModel fragmentModel,
-    List<ITemplateEvent> fragmentElementTags,
-    Map<String, ITemplateEvent> slots,
-    Map<String, List<ITemplateEvent>> slotContents
-  ) {
-    slots.forEach((slotName, slotElementTag) -> {
-      List<ITemplateEvent> slotContent = slotContents.get(slotName);
-
-      if (slotContent == null || slotContent.isEmpty()) {
-        if (slotElementTag instanceof IOpenElementTag openElementTag) {
-          slotContent = fallbackSlotContent(fragmentModel, openElementTag);
-        } else {
-          slotContent = emptyList();
-        }
-      }
-
-      fillSlot(fragmentElementTags, subTreeFrom(fragmentModel, slotElementTag), slotContent);
-    });
-  }
-
-  private void fillSlot(List<ITemplateEvent> templateEvents, List<ITemplateEvent> slotSubTree, List<ITemplateEvent> slotContent) {
-    int position = templateEvents.indexOf(slotSubTree.get(0));
-    templateEvents.removeAll(slotSubTree);
-    templateEvents.addAll(position, slotContent);
-  }
-
-  private static List<ITemplateEvent> fallbackSlotContent(IModel fragmentModel, IOpenElementTag slotElementTag) {
-    return subTreeBelow(fragmentModel, slotElementTag);
-  }
-
   private static IOpenElementTag blockOpenElement(IModelFactory modelFactory, Map<String, Object> attributes) {
     Map<String, String> attributesMap = convertObjectMapToStringMap (attributes);
 
@@ -294,22 +261,8 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     return modelFactory.createCloseElementTag("th:block");
   }
 
-  private boolean isSlot(ITemplateEvent templateEvent) {
-    if (templateEvent instanceof IProcessableElementTag elementTag) {
-      return elementTag.getElementCompleteName().equals(dialectPrefix + ":slot");
-    }
-
-    return false;
-  }
-
   private boolean isOpenOrStandaloneTag(ITemplateEvent templateEvent) {
     return templateEvent instanceof IProcessableElementTag;
-  }
-
-  private String slotNameOf(IProcessableElementTag elementTag) {
-    return elementTag.hasAttribute(dialectPrefix, "name")
-      ? elementTag.getAttributeValue(dialectPrefix, "name")
-      : DEFAULT_SLOT_NAME;
   }
 
   private static IProcessableElementTag firstOpenOrStandaloneElementTag(IModel model) {
