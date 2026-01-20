@@ -293,8 +293,8 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
         .filter(attribute -> dialectPrefix.equals(attribute.getAttributeDefinition().getAttributeName().getPrefix()))
         .forEach(attribute -> {
           Object resolvedValue = tryResolveAttributeValue(attribute, context, expressionParser);
-
-          attributes.put(attribute.getAttributeCompleteName().substring(dialectPrefix.length() + 1), resolvedValue);
+          String attributeName = kebabToCamelCase(attribute.getAttributeDefinition().getAttributeName().getAttributeName());
+          attributes.put(attributeName, resolvedValue);
         });
     }
 
@@ -384,5 +384,23 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
 
   private static Stream<ITemplateEvent> templateEventsIn(IModel model) {
     return IntStream.range(0, model.size()).mapToObj (model::get);
+  }
+
+  private static String kebabToCamelCase(String kebabCase) {
+    StringBuilder camelCase = new StringBuilder();
+    boolean toUpperCase = false;
+    for (char c : kebabCase.toCharArray()) {
+      if (c == '-') {
+        toUpperCase = true;
+      } else {
+        if (toUpperCase) {
+          camelCase.append(Character.toUpperCase(c));
+          toUpperCase = false;
+        } else {
+          camelCase.append(c);
+        }
+      }
+    }
+    return camelCase.toString();
   }
 }

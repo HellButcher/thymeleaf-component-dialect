@@ -130,6 +130,12 @@ class ComponentModelProcessorTest {
     assertMarkupEquals("<i></i>", html);
   }
 
+  @Test
+  void withVariableCamelCase_variableDefinedAsParameter_rendersVariable() {
+    String html = render("<pl:with-variable-camelCase pl:variable-camel-case='|with-variable-defined:${variableCamelCase}|' />");
+
+    assertMarkupEquals("<i>with-variable-defined:null</i>", html);
+  }
 
   @Test
   void withDefaultValue_variableDefinedAsParameter_rendersProvidedVariable() {
@@ -468,6 +474,7 @@ class ComponentModelProcessorTest {
         .addComponent("simple", "components/simple.html")
         .addComponent("with-parameter", "components/with-parameter.html")
         .addComponent("with-variable", "components/with-variable.html")
+        .addComponent("with-variable-camelCase", "components/with-variable-camelCase.html")
         .addComponent("with-pass-additional-attributes", "components/with-pass-additional-attributes.html")
         .addComponent("with-default-value", "components/with-default-value.html")
         .addComponent("with-default-and-named-slots", "components/with-default-and-named-slots.html")
