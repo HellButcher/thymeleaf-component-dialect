@@ -18,7 +18,6 @@ package ch.cstettler.thymeleaf;
 import static java.util.Arrays.stream;
 import static java.util.Collections.*;
 import static org.thymeleaf.model.AttributeValueQuotes.DOUBLE;
-import static org.thymeleaf.standard.processor.StandardReplaceTagProcessor.PRECEDENCE;
 import static org.thymeleaf.templatemode.TemplateMode.HTML;
 
 import java.util.ArrayList;
@@ -51,6 +50,13 @@ import org.thymeleaf.util.StringUtils;
 
 class ComponentModelProcessor extends AbstractElementModelProcessor {
 
+  /*
+   * Execute between `th:with` (precedence=600) and `th:attr` (precedence=700).
+   * This means, attributes like th:if or th:each will be executed before the component is processed, but attributes like th:attr will be executed after.
+   * This allows to use for example `th:if`, `th:each` on the component tag, but allows to use th:attr to be passed down using `pass-additional-attributes`.
+   * And `th:object` and `th:with` can be used on the component tag to define variables that are available in the slots, and not affected by pass-additional-attributes.
+   */
+  public static final int PRECEDENCE = 650;
   private static final String TH_FRAGMENT = "th:fragment";
 
   private final String dialectPrefix;

@@ -19,6 +19,9 @@ import java.util.HashSet;
 import java.util.Set;
 import org.thymeleaf.dialect.AbstractProcessorDialect;
 import org.thymeleaf.processor.IProcessor;
+import org.thymeleaf.standard.StandardDialect;
+import org.thymeleaf.standard.processor.StandardXmlNsTagProcessor;
+import org.thymeleaf.templatemode.TemplateMode;
 
 public class ComponentDialect extends AbstractProcessorDialect {
 
@@ -31,9 +34,10 @@ public class ComponentDialect extends AbstractProcessorDialect {
   }
 
   public ComponentDialect(String prefix) {
-    super("Thymeleaf UI Component Dialect", prefix, 0);
+    super("Thymeleaf UI Component Dialect", prefix, StandardDialect.PROCESSOR_PRECEDENCE);
 
     this.processors = new HashSet<>();
+    this.processors.add (new StandardXmlNsTagProcessor (TemplateMode.HTML, prefix));
     this.processors.add(new ReplaceSlotTagProcessor(prefix, "slot"));
     this.processors.add(new RemoveSlotAttributeProcessor(prefix, "slot"));
   }

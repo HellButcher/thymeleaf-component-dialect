@@ -112,10 +112,30 @@ class ComponentModelProcessorTest {
   }
 
   @Test
+  void simple_each_rendersMulti() {
+    Context context = new Context ();
+    context.setVariable("items", List.of("item1", "item2", "item3"));
+
+    String html = render("<pl:simple th:each='item:${items}' />", context);
+
+    assertMarkupEquals("<i>simple</i><i>simple</i><i>simple</i>", html);
+  }
+
+  @Test
   void withParameter_parameterDefined_rendersParameter() {
     String html = render("<pl:with-parameter pl:parameter='with-parameter-defined' />");
 
     assertMarkupEquals("<i>with-parameter-defined</i>", html);
+  }
+
+  @Test
+  void withParameter_each_rendersParameter() {
+    Context context = new Context ();
+    context.setVariable("items", List.of("item1", "item2", "item3"));
+
+    String html = render("<pl:with-parameter th:each='item:${items}' pl:parameter='${item}' />", context);
+
+    assertMarkupEquals("<i>item1</i><i>item2</i><i>item3</i>", html);
   }
 
   @Test
@@ -166,13 +186,6 @@ class ComponentModelProcessorTest {
     String html = render("<th:block th:with='variable=|with-variable-defined:${variable}|'><pl:with-default-value /></th:block>");
 
     assertMarkupEquals("<i>default-value</i>", html);
-  }
-
-  @Test
-  void withDefaultValue_variableDefinedAsByWithOnSameTag_rendersProvidedVariableWithDefaultValuePredefined() {
-    String html = render("<pl:with-default-value th:with='variable=|with-variable-defined:${variable}|' />");
-
-    assertMarkupEquals("<i>with-variable-defined:default-value</i>", html);
   }
 
   @Test
@@ -342,6 +355,42 @@ class ComponentModelProcessorTest {
   }
 
   @Test
+  void withPassAdditionalAttributesAnsSlot_withDefaultSlotValue_rendersAdditionalAttribute() {
+    String html = render("<pl:with-pass-additional-attributes-and-slot th:title=\"${'the title'}\"></pl:with-pass-additional-attributes-and-slot>");
+
+    assertMarkupEquals(""
+                       + "<i title=\"the title\">has-additional-attributes</i>"
+                       +"<b>And Slot (default)</b>", html);
+  }
+
+  @Test
+  void withPassAdditionalAttributesAnsSlot_withValueInSlot_resolvesValue() {
+    String html = render("<pl:with-pass-additional-attributes-and-slot th:title=\"${'the title'}\" th:with=\"theValue=${'a value'}\">" +
+                         "<b>And Slot with <th:block th:text='${theValue}'></th:block></b>" +
+                         "</pl:with-pass-additional-attributes-and-slot>");
+
+    assertMarkupEquals(""
+                       + "<i title=\"the title\">has-additional-attributes</i>"
+                       +"<b>And Slot with a value</b>", html);
+  }
+
+  @Test
+  void withPassAdditionalAttributesAnsSlot_ifConditionTrue_renders() {
+    String html = render("<pl:with-pass-additional-attributes-and-slot th:title=\"${'the title'}\" th:if=\"true\"></pl:with-pass-additional-attributes-and-slot>");
+
+    assertMarkupEquals(""
+                       + "<i title=\"the title\">has-additional-attributes</i>"
+                       +"<b>And Slot (default)</b>", html);
+  }
+
+  @Test
+  void withPassAdditionalAttributesAnsSlot_ifConditionFalse_rendersNothing() {
+    String html = render("<pl:with-pass-additional-attributes-and-slot th:title=\"${'the title'}\" th:if=\"false\"></pl:with-pass-additional-attributes-and-slot>");
+
+    assertMarkupEquals("", html);
+  }
+
+  @Test
   void subTree_rootStartTemplateEvent_returnsCompleteTree() {
     ITemplateEvent startTemplateEvent = openElementTag();
     List<ITemplateEvent> templateEvents = List.of(
@@ -486,12 +535,17 @@ class ComponentModelProcessorTest {
   }
 
   private static String render(String template) {
+    return render(template, new Context());
+  }
+
+  private static String render(String template, Context context) {
     ComponentDialect componentDialect = new ComponentDialect()
         .addComponent("simple", "components/simple.html")
         .addComponent("with-parameter", "components/with-parameter.html")
         .addComponent("with-variable", "components/with-variable.html")
         .addComponent("with-variable-camelCase", "components/with-variable-camelCase.html")
         .addComponent("with-pass-additional-attributes", "components/with-pass-additional-attributes.html")
+        .addComponent("with-pass-additional-attributes-and-slot", "components/with-pass-additional-attributes-and-slot.html")
         .addComponent("with-default-value", "components/with-default-value.html")
         .addComponent("with-default-and-named-slots", "components/with-default-and-named-slots.html")
         .addComponent("with-default-slot", "components/with-default-slot.html")
@@ -507,7 +561,7 @@ class ComponentModelProcessorTest {
     templateEngine.setCacheManager(null);
     templateEngine.clearTemplateCache();
 
-    String result = templateEngine.process(new TemplateSpec(template, HTML), new Context());
+    String result = templateEngine.process(new TemplateSpec(template, HTML), context);
 
     return result.trim();
   }
