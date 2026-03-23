@@ -90,7 +90,7 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     }
     IEngineConfiguration configuration = context.getConfiguration();
     IStandardExpressionParser expressionParser = StandardExpressions.getExpressionParser(configuration);
-    Map<String, Object> additionalAttributes = resolveAdditionalAttributes(componentElementTag, context, expressionParser);
+    Map<String, Object> additionalAttributes = getAdditionalAttributes (componentElementTag);
     Map<String, Object> componentAttributes = resolveComponentAttributes(componentElementTag, context, expressionParser);
     componentAttributes.forEach(structureHandler::setLocalVariable);
 
@@ -301,15 +301,13 @@ class ComponentModelProcessor extends AbstractElementModelProcessor {
     return attributes;
   }
 
-  private Map<String, Object> resolveAdditionalAttributes(IProcessableElementTag element, ITemplateContext context,
-    IStandardExpressionParser expressionParser) {
+  private Map<String, Object> getAdditionalAttributes (IProcessableElementTag element) {
     Map<String, Object> attributes = new HashMap<>();
 
     if (element.getAllAttributes() != null) {
       stream(element.getAllAttributes())
         .filter(attribute -> !dialectPrefix.equals(attribute.getAttributeDefinition().getAttributeName().getPrefix()))
-        .forEach(attribute -> attributes.put(attribute.getAttributeCompleteName(),
-          tryResolveAttributeValue(attribute, context, expressionParser)));
+        .forEach(attribute -> attributes.put(attribute.getAttributeCompleteName(), attribute.getValue ()));
     }
 
     return attributes;

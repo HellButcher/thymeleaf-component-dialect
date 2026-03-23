@@ -71,6 +71,22 @@ class ComponentModelProcessorTest {
   }
 
   @Test
+  void withPassAdditionalAttributes_additionalDynamicAttribute2_rendersAttribute() {
+    String html = render("<pl:with-pass-additional-attributes th:attr=\"key=${'$value$'}\" />");
+
+    assertMarkupEquals("<i key=\"$value$\">has-additional-attributes</i>" +
+                       "<b key=\"$value$\">also-has-additional-attributes</b>", html);
+  }
+
+  @Test
+  void withPassAdditionalAttributes_additionalDynamicAttribute3_rendersAttribute() {
+    String html = render("<pl:with-pass-additional-attributes th:key=\"${'$value$'}\" />");
+
+    assertMarkupEquals("<i key=\"$value$\">has-additional-attributes</i>" +
+                       "<b key=\"$value$\">also-has-additional-attributes</b>", html);
+  }
+
+  @Test
   void simple_ifConditionTrue_renders() {
     String html = render("<pl:simple th:if='true' />");
 
