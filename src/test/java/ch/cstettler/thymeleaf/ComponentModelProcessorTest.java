@@ -391,6 +391,34 @@ class ComponentModelProcessorTest {
   }
 
   @Test
+  void withSlotCheck_defaultSlotDefined_rendersSlotDefinedIndicator() {
+    String html = render("<pl:with-slot-check><i>content</i></pl:with-slot-check>");
+
+    assertMarkupEquals("<div><i>default-slot-defined</i><i>content</i></div>", html);
+  }
+
+  @Test
+  void withSlotCheck_defaultSlotNotDefined_rendersSlotNotDefinedIndicator() {
+    String html = render("<pl:with-slot-check></pl:with-slot-check>");
+
+    assertMarkupEquals("<div><i>default-slot-not-defined</i></div>", html);
+  }
+
+  @Test
+  void withNamedSlotCheck_namedSlotDefined_rendersSlotDefinedIndicator() {
+    String html = render("<pl:with-named-slot-check><i pl:slot='slot-a'>content</i></pl:with-named-slot-check>");
+
+    assertMarkupEquals("<div><i>slot-a-defined</i><i>content</i></div>", html);
+  }
+
+  @Test
+  void withNamedSlotCheck_namedSlotNotDefined_rendersSlotNotDefinedIndicator() {
+    String html = render("<pl:with-named-slot-check></pl:with-named-slot-check>");
+
+    assertMarkupEquals("<div><i>slot-a-not-defined</i></div>", html);
+  }
+
+  @Test
   void subTree_rootStartTemplateEvent_returnsCompleteTree() {
     ITemplateEvent startTemplateEvent = openElementTag();
     List<ITemplateEvent> templateEvents = List.of(
@@ -553,7 +581,9 @@ class ComponentModelProcessorTest {
         .addComponent("with-slot-with-fallback", "components/with-slot-with-fallback.html")
         .addComponent("with-nested-fragment", "components/with-nested-fragment.html")
         .addComponent("with-nested-fragment-other", "components/with-nested-fragment.html :: other-fragment")
-        .addComponent("with-slot-conditional", "components/with-slot-conditional.html");
+        .addComponent("with-slot-conditional", "components/with-slot-conditional.html")
+        .addComponent("with-slot-check", "components/with-slot-check.html")
+        .addComponent("with-named-slot-check", "components/with-named-slot-check.html");
 
     TemplateEngine templateEngine = new TemplateEngine();
     templateEngine.setTemplateResolvers(setOf(new TemplateResolverChain(new ClassLoaderTemplateResolver(), new StringTemplateResolver())));
